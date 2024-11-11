@@ -1,0 +1,15 @@
+SELECT * FROM cloud.clients WHERE email IS NULL;
+-- -- Удаление существующей таблицы
+-- DROP TABLE IF EXISTS "cloud".clients;
+--
+-- -- Создание новой таблицы
+-- CREATE TABLE "cloud".clients (
+--                               email VARCHAR(255) PRIMARY KEY UNIQUE NOT NULL,
+--                               password VARCHAR(255) NOT NULL
+-- );
+--
+-- -- Вставка новых данных
+-- INSERT INTO "cloud".clients (email, password)
+-- VALUES
+--     ('user@test.org', 'P@ssw0rd'),
+--     ('admin@test.org', 'P@ssw0rd');
