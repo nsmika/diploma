@@ -5,13 +5,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
-import ru.netology.model.Login;
 import ru.netology.service.AuthService;
 import ru.netology.model.User;
-import ru.netology.model.Error;
-import ru.netology.security.JwtTokenProvider;
-import ru.netology.service.LoginRequest;
 
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,44 +27,32 @@ public class AuthController {
     public ResponseEntity<Map<String, Object>> login(@RequestBody User user) {
         Map<String, Object> response = new HashMap<>();
         try {
-            // Аутентификация и генерация токена
+            // Аутентификация пользователя
             String token = authService.authenticate(user.getLogin(), user.getPassword());
-
-            // Создаем объект Login для успешного ответа
-            Login loginResponse = new Login();
-            loginResponse.setAuthToken(token);
-
-            response.put("status", HttpStatus.OK.value());  // Статус 200 (OK)
-            response.put("auth-token", loginResponse.getAuthToken()); // Токен
-
+            response.put("status", HttpStatus.OK.value());
+            response.put("auth-token", token);
             return ResponseEntity.status(HttpStatus.OK).body(response);
         } catch (BadCredentialsException e) {
-            // Обработка ошибок аутентификации
-            Error errorResponse = new Error();
-            errorResponse.setError("Bad credentials");
-
-            response.put("status", HttpStatus.BAD_REQUEST.value());  // Статус 400 (Bad Request)
-            response.put("error", errorResponse.getError()); // Ошибка
-
+            response.put("status", HttpStatus.BAD_REQUEST.value());
+            response.put("error", "Неправильный логин или пароль");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         } catch (Exception e) {
-            // Обработка других ошибок
-            Error errorResponse = new Error();
-            errorResponse.setError("Authorization error");
-
-            response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());  // Статус 500 (Internal Server Error)
-            response.put("error", errorResponse.getError()); // Ошибка
-
+            response.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            response.put("error", "Ошибка на сервере");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
-
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout(@RequestHeader("auth-token") String authToken) {
-        authService.logout(authToken);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Выход выполнен");
-        return ResponseEntity.ok(response);
+        try {
+            authService.logout(authToken);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Выход выполнен");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("error", "Ошибка при выходе"));
+        }
     }
 }

@@ -8,6 +8,7 @@ import ru.netology.model.User;
 import ru.netology.repository.UserRepository;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class PasswordEncryptionService {
@@ -35,5 +36,9 @@ public class PasswordEncryptionService {
         }
 
         userRepository.saveAll(users);
+    }
+
+    public void encryptPasswordsAsync() {
+        CompletableFuture.runAsync(this::encryptPasswords);
     }
 }

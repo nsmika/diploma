@@ -17,8 +17,7 @@ public class EncryptPasswordsRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        passwordEncryptionService.encryptPasswords();
-        System.out.println("Пароли зашифрованы.");
+        passwordEncryptionService.encryptPasswordsAsync();
+        System.out.println("Password encryption started in background.");
     }
 }
-
