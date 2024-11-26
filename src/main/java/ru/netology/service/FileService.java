@@ -1,82 +1,112 @@
 package ru.netology.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import ru.netology.dto.FileDto;
 import ru.netology.model.File;
 import ru.netology.repository.FileRepository;
-import ru.netology.security.JwtTokenProvider;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class FileService {
 
+    private final Path storagePath;
     private final FileRepository fileRepository;
-    private final JwtTokenProvider jwtTokenProvider;
 
-    @Autowired
-    public FileService(FileRepository fileRepository, JwtTokenProvider jwtTokenProvider) {
+    public FileService(FileRepository fileRepository, @Value("${file.storage.location}") String storageLocation) {
         this.fileRepository = fileRepository;
-        this.jwtTokenProvider = jwtTokenProvider;
-    }
 
-    @Transactional
-    public void uploadFile(String authToken, String filename, byte[] content) {
-        String userEmail = jwtTokenProvider.getUserEmailFromToken(authToken);
-
-        File file = new File();
-        file.setFilename(filename);
-        file.setContent(content);
-        file.setSize(content.length);
-        file.setUserEmail(userEmail);
-        fileRepository.save(file);
-    }
-
-    public byte[] getFile(String authToken, String filename) {
-        String userEmail = jwtTokenProvider.getUserEmailFromToken(authToken);
-
-        Optional<File> fileOptional = fileRepository.findByFilenameAndUserEmail(filename, userEmail);
-        return fileOptional.map(File::getContent).orElse(null);
-    }
-
-    @Transactional
-    public boolean deleteFile(String authToken, String filename) {
-        String userEmail = jwtTokenProvider.getUserEmailFromToken(authToken);
-
-        Optional<File> fileOptional = fileRepository.findByFilenameAndUserEmail(filename, userEmail);
-        if (fileOptional.isPresent()) {
-            fileRepository.delete(fileOptional.get());
-            return true;
+        if (storageLocation == null || storageLocation.isBlank()) {
+            throw new IllegalArgumentException("Storage location must not be null or empty.");
         }
-        return false;
+        this.storagePath = Paths.get(storageLocation);
+        initStorage();
     }
 
-    public List<FileInfo> listFiles(String authToken) {
-        String userEmail = jwtTokenProvider.getUserEmailFromToken(authToken);
+    private void initStorage() {
+        try {
+            Files.createDirectories(storagePath);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create storage directory at: " + storagePath, e);
+        }
+    }
 
-        return fileRepository.findAllByUserEmail(userEmail).stream()
-                .map(file -> new FileInfo(file.getFilename(), file.getSize()))
+    public List<FileDto> getFiles(int limit) {
+        return fileRepository.findAll()
+                .stream()
+                .limit(limit)
+                .map(file -> new FileDto(file.getFilename(), file.getFilesize()))
                 .collect(Collectors.toList());
     }
 
-    public static class FileInfo {
-        private final String filename;
-        private final long size;
+    public void uploadFile(String filename, MultipartFile file) {
+        try {
+            Path destination = storagePath.resolve(filename);
+            Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
 
-        public FileInfo(String filename, long size) {
-            this.filename = filename;
-            this.size = size;
+            File fileEntity = new File(filename, destination.toString(), file.getSize());
+            fileRepository.save(fileEntity);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save file: " + filename, e);
+        }
+    }
+
+    public Resource getFile(String filename) {
+        try {
+            Path filePath = storagePath.resolve(filename);
+            Resource resource = new UrlResource(filePath.toUri());
+            if (!resource.exists() || !resource.isReadable()) {
+                throw new RuntimeException("File not found or not readable: " + filename);
+            }
+            return resource;
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Error reading file: " + filename, e);
+        }
+    }
+
+    public void updateFile(String filename, Map<String, Object> fileData) {
+        File fileEntity = fileRepository.findByFilename(filename)
+                .orElseThrow(() -> new RuntimeException("File not found: " + filename));
+
+        if (fileData.containsKey("newFilename")) {
+            String newFilename = fileData.get("newFilename").toString();
+            Path oldPath = storagePath.resolve(fileEntity.getFilename());
+            Path newPath = storagePath.resolve(newFilename);
+
+            try {
+                Files.move(oldPath, newPath, StandardCopyOption.REPLACE_EXISTING);
+                fileEntity.setFilename(newFilename);
+                fileEntity.setFilepath(newPath.toString());
+            } catch (IOException e) {
+                throw new RuntimeException("Error renaming file: " + filename, e);
+            }
         }
 
-        public String getFilename() {
-            return filename;
-        }
+        fileRepository.save(fileEntity);
+    }
 
-        public long getSize() {
-            return size;
+    public void deleteFile(String filename) {
+        File fileEntity = fileRepository.findByFilename(filename)
+                .orElseThrow(() -> new RuntimeException("File not found: " + filename));
+
+        try {
+            Path filePath = Paths.get(fileEntity.getFilepath());
+            Files.deleteIfExists(filePath);
+            fileRepository.delete(fileEntity);
+        } catch (IOException e) {
+            throw new RuntimeException("Error deleting file: " + filename, e);
         }
     }
 }

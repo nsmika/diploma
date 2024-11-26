@@ -14,7 +14,3 @@ spring:
   main:
     allow-bean-definition-overriding: true
 
-#security:
-#  jwt:
-#    secret: "mySecretKey"
-#    expiration: 86400000 # in milliseconds (1 day)

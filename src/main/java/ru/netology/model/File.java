@@ -4,32 +4,27 @@ package ru.netology.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "files")
+@Table(name = "files", schema = "cloud")
 public class File {
+    public File() {
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private String filename;
+    private String filepath;
+    private long filesize;
 
-    @Lob
-    private byte[] content;
-
-    @Column(nullable = false)
-    private long size;
-
-    @Column(nullable = false)
-    private String userEmail;
-
+    public File(String filename, String filepath, long filesize) {
+        this.filename = filename;
+        this.filepath = filepath;
+        this.filesize = filesize;
+    }
 
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getFilename() {
@@ -40,27 +35,20 @@ public class File {
         this.filename = filename;
     }
 
-    public byte[] getContent() {
-        return content;
+    public String getFilepath() {
+        return filepath;
     }
 
-    public void setContent(byte[] content) {
-        this.content = content;
+    public void setFilepath(String filepath) {
+        this.filepath = filepath;
     }
 
-    public long getSize() {
-        return size;
+    public long getFilesize() {
+        return filesize;
     }
 
-    public void setSize(long size) {
-        this.size = size;
-    }
-
-    public String getUserEmail() {
-        return userEmail;
-    }
-
-    public void setUserEmail(String userEmail) {
-        this.userEmail = userEmail;
+    public void setFilesize(long filesize) {
+        this.filesize = filesize;
     }
 }
+

@@ -22,12 +22,12 @@ public class AuthService {
     }
 
     // Метод для аутентификации
-    public String authenticate(String email, String password) {
-        User user = userRepository.findByEmail(email)
+    public String authenticate(String login, String password) {
+        User user = userRepository.findByLogin(login)
                 .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден"));
 
         if (passwordEncoder.matches(password, user.getPassword())) {
-            return jwtTokenProvider.createToken(user.getEmail());  // Генерация токена
+            return jwtTokenProvider.createToken(user.getLogin());  // Генерация токена
         } else {
             throw new BadCredentialsException("Неправильный пароль");
         }

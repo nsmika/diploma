@@ -1,58 +1,66 @@
 package ru.netology.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import ru.netology.service.FileService;
-import ru.netology.service.FileService.FileInfo;
+import ru.netology.dto.FileDto;
+import ru.netology.model.Error;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
+@RequestMapping("/file")
 public class FileController {
 
-    private final FileService fileService;
+    @Autowired
+    private FileService fileService; // Сервис для работы с файлами
 
-    public FileController(FileService fileService) {
-        this.fileService = fileService;
-    }
-
-    // Метод для загрузки файла с привязкой к пользователю
-    @PostMapping("/file")
-    public ResponseEntity<?> uploadFile(@RequestHeader("auth-token") String authToken,
-                                        @RequestParam String filename,
-                                        @RequestBody byte[] fileContent) {
-        fileService.uploadFile(authToken, filename, fileContent);
-        return ResponseEntity.ok().build();
-    }
-
-    // Метод для получения содержимого файла
-    @GetMapping("/file")
-    public ResponseEntity<?> getFile(@RequestHeader("auth-token") String authToken,
-                                     @RequestParam String filename) {
-        byte[] file = fileService.getFile(authToken, filename);
-        if (file != null) {
-            return ResponseEntity.ok(file);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    // Метод для удаления файла
-    @DeleteMapping("/file")
-    public ResponseEntity<?> deleteFile(@RequestHeader("auth-token") String authToken,
-                                        @RequestParam("filename") String filename) {
-        boolean deleted = fileService.deleteFile(authToken, filename);
-        if (deleted) {
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-
-    // Метод для получения списка файлов с их размерами
+    // Получение списка файлов
     @GetMapping("/list")
-    public ResponseEntity<List<FileInfo>> listFiles(@RequestHeader("auth-token") String authToken) {
-        List<FileInfo> files = fileService.listFiles(authToken);
+    public ResponseEntity<List<FileDto>> getFiles(@RequestParam("limit") int limit) {
+        List<FileDto> files = fileService.getFiles(limit);
         return ResponseEntity.ok(files);
+    }
+
+    // Загрузка файла
+    @PostMapping
+    public ResponseEntity<String> uploadFile(
+            @RequestParam("filename") String filename,
+            @RequestParam("file") MultipartFile file) {
+        fileService.uploadFile(filename, file);
+        return ResponseEntity.status(HttpStatus.CREATED).body("File uploaded successfully");
+    }
+
+    // Скачивание файла
+    @GetMapping
+    public ResponseEntity<Resource> downloadFile(@RequestParam("filename") String filename) {
+        Resource fileResource = fileService.getFile(filename);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(fileResource);
+    }
+
+    // Обновление файла
+    @PutMapping
+    public ResponseEntity<String> updateFile(
+            @RequestParam("filename") String filename,
+            @RequestBody Map<String, Object> fileData) {
+        fileService.updateFile(filename, fileData);
+        return ResponseEntity.ok("File updated successfully");
+    }
+
+    // Удаление файла
+    @DeleteMapping
+    public ResponseEntity<String> deleteFile(@RequestParam("filename") String filename) {
+        fileService.deleteFile(filename);
+        return ResponseEntity.ok("File deleted successfully");
     }
 }

@@ -8,18 +8,18 @@ import jakarta.persistence.*;
 public class User {
 
     @Id
-    @Column(name = "email", unique = true, nullable = false)
-    private String email;
+    @Column(name = "login", unique = true, nullable = false)
+    private String login;
 
     @Column(name = "password", nullable = false)
     private String password;
 
-    public String getEmail() {
-        return email;
+    public String getLogin() {
+        return login;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setLogin(String email) {
+        this.login = email;
     }
 
     public String getPassword() {
