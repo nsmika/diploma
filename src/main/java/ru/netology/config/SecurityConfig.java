@@ -14,7 +14,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -49,8 +48,6 @@ public class SecurityConfig implements WebMvcConfigurer {
                         .anyRequest().authenticated()
                 );
         return http.build();
-
-
     }
 
     @Bean
@@ -63,6 +60,7 @@ public class SecurityConfig implements WebMvcConfigurer {
 
         return authenticationManagerBuilder.build();
     }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -74,5 +72,4 @@ public class SecurityConfig implements WebMvcConfigurer {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
-
 }

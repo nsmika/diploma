@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.netology.service.AuthService;
 import ru.netology.model.User;
 
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
